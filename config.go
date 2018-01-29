@@ -8,7 +8,7 @@ import (
 
 // Config dynamodb configuration parameters
 type Config struct {
-	SESSION session.Session
+	SESSION *session.Session
 	TABLE  string
 	ENDPOINT string
 }
@@ -24,8 +24,8 @@ func NewConfig(region string, endpoint string, access_key string, secret string,
 	}
 	config = &Config{
 		SESSION: newSession,
-		TABLE: aws.String(table),
-		ENDPOINT: aws.String(endpoint),
+		TABLE: table,
+		ENDPOINT: endpoint,
 	}
 	return 
 }
