@@ -2,13 +2,15 @@ package dynamo
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"gopkg.in/mgo.v2/bson"
-	//"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/contamobi/oauth2"
+	"github.com/contamobi/oauth2/models"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func NewTokenStore(config *Config) (tokenStore *TokenStore) {
@@ -76,7 +78,7 @@ func CreateWithAuthorizationCode(tokenStorage *TokenStore, info oauth2.TokenInfo
 		rExpiredAt = rexp.String()
 	}
 	params := &dynamodb.PutItemInput{
-		TableName: aws.String(tokenStorage.config.TABLE.TxnCName),
+		TableName: aws.String(tokenStorage.config.TABLE.BasicCname),
 		Item: map[string]*dynamodb.AttributeValue{
 			"ID": &dynamodb.AttributeValue{
 				S: aws.String(code),
@@ -164,21 +166,75 @@ func CreateWithRefreshToken(tokenStorage *TokenStore, info oauth2.TokenInfo) (er
 
 // RemoveByCode use the authorization code to delete the token information
 func (tokenStorage *TokenStore) RemoveByCode(code string) (err error) {
-
+	input := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(code),
+			},
+		},
+		TableName: aws.String(tokenStorage.config.TABLE.BasicCname),
+	}
+	_, err = tokenStorage.session.DeleteItem(input)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return
 }
 
 // RemoveByAccess use the access token to delete the token information
 func (tokenStorage *TokenStore) RemoveByAccess(access string) (err error) {
-
+	input := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(access),
+			},
+		},
+		TableName: aws.String(tokenStorage.config.TABLE.AccessCName),
+	}
+	_, err = tokenStorage.session.DeleteItem(input)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return
 }
 
 // RemoveByRefresh use the refresh token to delete the token information
 func (tokenStorage *TokenStore) RemoveByRefresh(refresh string) (err error) {
-
+	input := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(refresh),
+			},
+		},
+		TableName: aws.String(tokenStorage.config.TABLE.AccessCName),
+	}
+	_, err = tokenStorage.session.DeleteItem(input)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return
 }
 
-func (tokenStorage *TokenStore) getData(basicID string) (ti oauth2.TokenInfo, err error) {
-
+func (tokenStorage *TokenStore) getData(basicID string) (to oauth2.TokenInfo, err error) {
+	input := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(basicID),
+			},
+		},
+		TableName: aws.String(tokenStorage.config.TABLE.BasicCname),
+	}
+	result, err := tokenStorage.session.GetItem(input)
+	if err != nil {
+		return
+	}
+	var tm models.Token
+	err = json.Unmarshal([]byte(awsutil.StringValue(result)), &tm)
+	if err != nil {
+		return
+	}
+	to = &tm
+	return
 }
 
 func (tokenStorage *TokenStore) getBasicID(cname, token string) (basicID string, err error) {
@@ -186,16 +242,16 @@ func (tokenStorage *TokenStore) getBasicID(cname, token string) (basicID string,
 }
 
 // GetByCode use the authorization code for token information data
-func (tokenStorage *TokenStore) GetByCode(code string) (ti oauth2.TokenInfo, err error) {
+func (tokenStorage *TokenStore) GetByCode(code string) (to oauth2.TokenInfo, err error) {
 
 }
 
 // GetByAccess use the access token for token information data
-func (tokenStorage *TokenStore) GetByAccess(access string) (ti oauth2.TokenInfo, err error) {
+func (tokenStorage *TokenStore) GetByAccess(access string) (to oauth2.TokenInfo, err error) {
 
 }
 
 // GetByRefresh use the refresh token for token information data
-func (tokenStorage *TokenStore) GetByRefresh(refresh string) (ti oauth2.TokenInfo, err error) {
+func (tokenStorage *TokenStore) GetByRefresh(refresh string) (to oauth2.TokenInfo, err error) {
 
 }

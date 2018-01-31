@@ -14,7 +14,6 @@ type Config struct {
 }
 
 type TableConfig struct {
-	TxnCName     string
 	BasicCname   string
 	AccessCName  string
 	RefreshCName string
@@ -32,7 +31,6 @@ func NewConfig(region string, endpoint string, access_key string, secret string)
 	config = &Config{
 		SESSION: newSession,
 		TABLE: &TableConfig{
-			TxnCName:     "oauth2_txn",
 			BasicCname:   "oauth2_basic",
 			AccessCName:  "oauth2_access",
 			RefreshCName: "oauth2_refresh",
