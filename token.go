@@ -41,11 +41,6 @@ type basicData struct {
 
 // Create and store the new token information
 func (tokenStorage *TokenStore) Create(info oauth2.TokenInfo) (err error) {
-	jv, err := json.Marshal(info)
-	if err != nil {
-		return
-	}
-
 	if code := info.GetCode(); code != "" {
 		err = CreateWithAuthorizationCode(tokenStorage, info)
 		return
@@ -238,20 +233,49 @@ func (tokenStorage *TokenStore) getData(basicID string) (to oauth2.TokenInfo, er
 }
 
 func (tokenStorage *TokenStore) getBasicID(cname, token string) (basicID string, err error) {
-
+	input := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				S: aws.String(token),
+			},
+		},
+		TableName: aws.String(cname),
+	}
+	result, err := tokenStorage.session.GetItem(input)
+	if err != nil {
+		return
+	}
+	var td tokenData
+	err = json.Unmarshal([]byte(awsutil.StringValue(result)), &td)
+	if err != nil {
+		return
+	}
+	basicID = td.BasicID
+	return
 }
 
 // GetByCode use the authorization code for token information data
 func (tokenStorage *TokenStore) GetByCode(code string) (to oauth2.TokenInfo, err error) {
-
+	to, err = tokenStorage.getData(code)
+	return
 }
 
 // GetByAccess use the access token for token information data
 func (tokenStorage *TokenStore) GetByAccess(access string) (to oauth2.TokenInfo, err error) {
-
+	basicID, err := tokenStorage.getBasicID(tokenStorage.config.TABLE.AccessCName, access)
+	if err != nil && basicID == "" {
+		return
+	}
+	to, err = tokenStorage.getData(basicID)
+	return
 }
 
 // GetByRefresh use the refresh token for token information data
 func (tokenStorage *TokenStore) GetByRefresh(refresh string) (to oauth2.TokenInfo, err error) {
-
+	basicID, err := tokenStorage.getBasicID(tokenStorage.config.TABLE.RefreshCName, refresh)
+	if err != nil && basicID == "" {
+		return
+	}
+	to, err = tokenStorage.getData(basicID)
+	return
 }
