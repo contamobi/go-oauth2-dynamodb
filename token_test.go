@@ -1,28 +1,26 @@
 package dynamo_test
 
 import (
+	"os"
 	"testing"
 	"time"
-	"os"
 
 	"github.com/contamobi/go-oauth2-dynamodb"
-	"github.com/contamobi/go-oauth2/models"
+	"github.com/contamobi/oauth2/models"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestTokenStore(t *testing.T) {
 	Convey("Test dynamodb token store", t, func() {
-		mcfg := mongo.NewConfig(
+		mcfg, err := dynamo.NewConfig(
 			os.Getenv("AWS_REGION"),
-			os.Getenv("DYNAMO_ENDPOINT") 
-			os.Getenv("AWS_ACCESS_KEY"), 
+			os.Getenv("DYNAMODB_ENDPOINT"),
+			os.Getenv("AWS_ACCESS_KEY"),
 			os.Getenv("AWS_SECRET"),
-			os.Getenv("DYNAMO_TABLE")
 		)
-		store, err := mongo.NewTokenStore(mcfg)
+		store := dynamo.NewTokenStore(mcfg)
 		So(err, ShouldBeNil)
-
 		Convey("Test authorization code store", func() {
 			info := &models.Token{
 				ClientID:      "1",
