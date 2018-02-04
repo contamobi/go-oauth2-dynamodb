@@ -23,9 +23,11 @@ import (
 func main() {
 	manager := manage.NewDefaultManager()
 	manager.MustTokenStorage(
-		mongo.NewTokenStore(mongo.NewConfig(
-			"mongodb://127.0.0.1:27017",
-			"oauth2",
+		dynamo.NewTokenStore(dynamo.NewConfig(
+			"us-east-1", // AWS Region
+			"http://localhost:8000", // AWS DynamoDB Endpoint
+			"AKIA*********", // AWS Access Key
+			"*************", // AWS Secret
 		)),
 	)
 	// ...
