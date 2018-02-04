@@ -24,6 +24,7 @@ func NewConfig(region string, endpoint string, access_key string, secret string)
 	newSession, err := session.NewSession(&aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(access_key, secret, ""),
+		Endpoint:    aws.String(endpoint),
 	})
 	if err != nil {
 		return

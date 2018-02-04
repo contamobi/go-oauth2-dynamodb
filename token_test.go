@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/contamobi/go-oauth2-dynamodb"
+	dynamo "github.com/contamobi/go-oauth2-dynamodb"
 	"github.com/contamobi/oauth2/models"
 
 	. "github.com/smartystreets/goconvey/convey"

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/contamobi/oauth2"
 	"github.com/contamobi/oauth2/models"
 	"gopkg.in/mgo.v2/bson"
@@ -28,50 +28,53 @@ type TokenStore struct {
 }
 
 type tokenData struct {
-	ID        string
-	BasicID   string
-	ExpiredAt time.Time
+	ID        string    `json:"_id"`
+	BasicID   string    `json:"BasicID"`
+	ExpiredAt time.Time `json:"ExpiredAt"`
 }
 
 type basicData struct {
-	ID        string
-	Data      []byte
-	ExpiredAt time.Time
+	ID        string    `json:"_id"`
+	Data      []byte    `json:"Data"`
+	ExpiredAt time.Time `json:"ExpiredAt"`
 }
 
 // Create and store the new token information
 func (tokenStorage *TokenStore) Create(info oauth2.TokenInfo) (err error) {
 	if code := info.GetCode(); code != "" {
-		err = CreateWithAuthorizationCode(tokenStorage, info)
+		err = CreateWithAuthorizationCode(tokenStorage, info, "")
+		if err != nil {
+			fmt.Printf("CreateWithAuthorizationCode error: %s\n", err)
+		}
 		return
 	}
 	if refresh := info.GetRefresh(); refresh != "" {
 		err = CreateWithRefreshToken(tokenStorage, info)
 	} else {
-		err = CreateWithAccessToken(tokenStorage, info)
+		err = CreateWithAccessToken(tokenStorage, info, "")
 	}
 	return
 }
 
-func CreateWithAuthorizationCode(tokenStorage *TokenStore, info oauth2.TokenInfo, id ...string) (err error) {
+func CreateWithAuthorizationCode(tokenStorage *TokenStore, info oauth2.TokenInfo, id string) (err error) {
 	code := info.GetCode()
-
-	if id != nil {
-		code = id[0]
+	if len(id) > 0 {
+		code = id
 	}
 	data, err := json.Marshal(info)
 	if err != nil {
 		return
 	}
-	expiredAt := info.GetCodeCreateAt().Add(info.GetCodeExpiresIn()).String()
+	expiredAt := info.GetCodeCreateAt().Add(info.GetCodeExpiresIn())
 	rExpiredAt := expiredAt
 	if refresh := info.GetRefresh(); refresh != "" {
 		rexp := info.GetRefreshCreateAt().Add(info.GetRefreshExpiresIn())
-		if info.GetCodeCreateAt().Add(info.GetCodeExpiresIn()).Second() > rexp.Second() {
-			expiredAt = rexp.String()
+		if expiredAt.Second() > rexp.Second() {
+			expiredAt = rexp
 		}
-		rExpiredAt = rexp.String()
+		rExpiredAt = rexp
 	}
+	exp := rExpiredAt.Format(time.RFC3339)
 	params := &dynamodb.PutItemInput{
 		TableName: aws.String(tokenStorage.config.TABLE.BasicCname),
 		Item: map[string]*dynamodb.AttributeValue{
@@ -82,7 +85,7 @@ func CreateWithAuthorizationCode(tokenStorage *TokenStore, info oauth2.TokenInfo
 				B: data,
 			},
 			"ExpiredAt": &dynamodb.AttributeValue{
-				S: &rExpiredAt,
+				S: &exp,
 			},
 		},
 	}
@@ -90,32 +93,23 @@ func CreateWithAuthorizationCode(tokenStorage *TokenStore, info oauth2.TokenInfo
 	return
 }
 
-func CreateWithAccessToken(tokenStorage *TokenStore, info oauth2.TokenInfo, id ...string) (err error) {
-
-	if id == nil {
-		id[0] = bson.NewObjectId().Hex()
+func CreateWithAccessToken(tokenStorage *TokenStore, info oauth2.TokenInfo, id string) (err error) {
+	if len(id) == 0 {
+		id = bson.NewObjectId().Hex()
 	}
-	err = CreateWithAuthorizationCode(tokenStorage, info, id[0])
+	err = CreateWithAuthorizationCode(tokenStorage, info, id)
 	if err != nil {
 		return
 	}
-	expiredAt := info.GetAccessCreateAt().Add(info.GetAccessExpiresIn()).String()
-	token := tokenData{
-		BasicID:   id[0],
-		ExpiredAt: info.GetAccessCreateAt().Add(info.GetAccessExpiresIn()),
-	}
-	tokenByte, err := json.Marshal(token)
-	if err != nil {
-		return
-	}
+	expiredAt := info.GetAccessCreateAt().Add(info.GetAccessExpiresIn()).Format(time.RFC3339)
 	accessParams := &dynamodb.PutItemInput{
 		TableName: aws.String(tokenStorage.config.TABLE.AccessCName),
 		Item: map[string]*dynamodb.AttributeValue{
 			"ID": &dynamodb.AttributeValue{
 				S: aws.String(info.GetAccess()),
 			},
-			"Data": &dynamodb.AttributeValue{
-				B: tokenByte,
+			"BasicID": &dynamodb.AttributeValue{
+				S: &id,
 			},
 			"ExpiredAt": &dynamodb.AttributeValue{
 				S: &expiredAt,
@@ -132,30 +126,22 @@ func CreateWithRefreshToken(tokenStorage *TokenStore, info oauth2.TokenInfo) (er
 	if err != nil {
 		return
 	}
-	expiredAt := info.GetRefreshCreateAt().Add(info.GetRefreshExpiresIn()).String()
-	token := tokenData{
-		BasicID:   id,
-		ExpiredAt: info.GetRefreshCreateAt().Add(info.GetRefreshExpiresIn()),
-	}
-	tokenByte, err := json.Marshal(token)
-	if err != nil {
-		return
-	}
-	accessParams := &dynamodb.PutItemInput{
+	expiredAt := info.GetRefreshCreateAt().Add(info.GetRefreshExpiresIn()).Format(time.RFC3339)
+	refreshParams := &dynamodb.PutItemInput{
 		TableName: aws.String(tokenStorage.config.TABLE.RefreshCName),
 		Item: map[string]*dynamodb.AttributeValue{
 			"ID": &dynamodb.AttributeValue{
 				S: aws.String(info.GetRefresh()),
 			},
-			"Data": &dynamodb.AttributeValue{
-				B: tokenByte,
+			"BasicID": &dynamodb.AttributeValue{
+				S: &id,
 			},
 			"ExpiredAt": &dynamodb.AttributeValue{
 				S: &expiredAt,
 			},
 		},
 	}
-	_, err = tokenStorage.session.PutItem(accessParams)
+	_, err = tokenStorage.session.PutItem(refreshParams)
 	return
 }
 
@@ -171,7 +157,7 @@ func (tokenStorage *TokenStore) RemoveByCode(code string) (err error) {
 	}
 	_, err = tokenStorage.session.DeleteItem(input)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("RemoveByCode error: %s\n", err.Error())
 	}
 	return
 }
@@ -188,7 +174,7 @@ func (tokenStorage *TokenStore) RemoveByAccess(access string) (err error) {
 	}
 	_, err = tokenStorage.session.DeleteItem(input)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("RemoveByAccess error: %s\n", err.Error())
 	}
 	return
 }
@@ -201,30 +187,41 @@ func (tokenStorage *TokenStore) RemoveByRefresh(refresh string) (err error) {
 				S: aws.String(refresh),
 			},
 		},
-		TableName: aws.String(tokenStorage.config.TABLE.AccessCName),
+		TableName: aws.String(tokenStorage.config.TABLE.RefreshCName),
 	}
 	_, err = tokenStorage.session.DeleteItem(input)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("RemoveByRefresh error: %s\n", err.Error())
 	}
 	return
 }
 
 func (tokenStorage *TokenStore) getData(basicID string) (to oauth2.TokenInfo, err error) {
+	if len(basicID) == 0 {
+		return
+	}
 	input := &dynamodb.GetItemInput{
+		TableName: aws.String(tokenStorage.config.TABLE.BasicCname),
 		Key: map[string]*dynamodb.AttributeValue{
 			"ID": {
 				S: aws.String(basicID),
 			},
 		},
-		TableName: aws.String(tokenStorage.config.TABLE.BasicCname),
 	}
 	result, err := tokenStorage.session.GetItem(input)
 	if err != nil {
 		return
 	}
+	if len(result.Item) == 0 {
+		return
+	}
+	var b basicData
+	err = dynamodbattribute.UnmarshalMap(result.Item, &b)
+	if err != nil {
+		return
+	}
 	var tm models.Token
-	err = json.Unmarshal([]byte(awsutil.StringValue(result)), &tm)
+	err = json.Unmarshal(b.Data, &tm)
 	if err != nil {
 		return
 	}
@@ -246,7 +243,7 @@ func (tokenStorage *TokenStore) getBasicID(cname, token string) (basicID string,
 		return
 	}
 	var td tokenData
-	err = json.Unmarshal([]byte(awsutil.StringValue(result)), &td)
+	err = dynamodbattribute.UnmarshalMap(result.Item, &td)
 	if err != nil {
 		return
 	}
