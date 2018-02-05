@@ -1,0 +1,86 @@
+Parameters:
+  OauthBasicTableName:
+    Description: Name of oauth2 basic table
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9_-]*'
+    MinLength: '1'
+    MaxLength: '2048'
+    ConstraintDescription: must contain only alphanumberic characters
+  OauthAccessTableName:
+    Description: Name of oauth2 basic access
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9_-]*'
+    MinLength: '1'
+    MaxLength: '2048'
+    ConstraintDescription: must contain only alphanumberic characters
+  OauthRefreshTableName:
+    Description: Name of oauth2 basic refresh
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9_-]*'
+    MinLength: '1'
+    MaxLength: '2048'
+    ConstraintDescription: must contain only alphanumberic characters
+  ReadCapacityUnits:
+    Description: Provisioned read throughput
+    Type: Number
+    Default: '5'
+    MinValue: '5'
+    MaxValue: '10000'
+    ConstraintDescription: must be between 5 and 10000
+  WriteCapacityUnits:
+    Description: Provisioned write throughput
+    Type: Number
+    Default: '10'
+    MinValue: '5'
+    MaxValue: '10000'
+    ConstraintDescription: must be between 5 and 10000
+Resources:
+  Oauth2BasicTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref 'OauthBasicTableName'
+      AttributeDefinitions:
+      - AttributeName: 'ID'
+        AttributeType: 'S'
+      KeySchema:
+      - AttributeName: 'ID'
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !Ref 'ReadCapacityUnits'
+        WriteCapacityUnits: !Ref 'WriteCapacityUnits'
+  Oauth2AccessTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref 'OauthAccessTableName'
+      AttributeDefinitions:
+      - AttributeName: 'ID'
+        AttributeType: 'S'
+      KeySchema:
+      - AttributeName: 'ID'
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !Ref 'ReadCapacityUnits'
+        WriteCapacityUnits: !Ref 'WriteCapacityUnits'
+  Oauth2RefreshTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref 'OauthRefreshTableName'
+      AttributeDefinitions:
+      - AttributeName: 'ID'
+        AttributeType: 'S'
+      KeySchema:
+      - AttributeName: 'ID'
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !Ref 'ReadCapacityUnits'
+        WriteCapacityUnits: !Ref 'WriteCapacityUnits'
+Outputs:
+  Oauth2BasicTable:
+    Value: !Ref 'OauthBasicTableName'
+    Description: Table name of the newly created DynamoDB table
+  Oauth2AccessTable:
+    Value: !Ref 'OauthAccessTableName'
+    Description: Table name of the newly created DynamoDB table
+  Oauth2RefreshTable:
+    Value: !Ref 'OauthRefreshTableName'
+    Description: Table name of the newly created DynamoDB table

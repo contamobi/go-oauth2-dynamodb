@@ -1,0 +1,52 @@
+Parameters:
+  OauthAccessTableName:
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumberic characters
+    Description: Name of oauth2 basic access
+    MaxLength: '2048'
+    MinLength: '1'
+    Type: String
+  OauthBasicTableName:
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumberic characters
+    Description: Name of oauth2 basic table
+    MaxLength: '2048'
+    MinLength: '1'
+    Type: String
+  OauthRefreshTableName:
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumberic characters
+    Description: Name of oauth2 basic refresh
+    MaxLength: '2048'
+    MinLength: '1'
+    Type: String
+  ReadCapacityUnits:
+    ConstraintDescription: must be between 5 and 10000
+    Default: '5'
+    Description: Provisioned read throughput
+    MaxValue: '10000'
+    MinValue: '5'
+    Type: Number
+  WriteCapacityUnits:
+    ConstraintDescription: must be between 5 and 10000
+    Default: '10'
+    Description: Provisioned write throughput
+    MaxValue: '10000'
+    MinValue: '5'
+    Type: Number
+Resources:
+  DynamodbTables:
+    Properties:
+      Parameters:
+        OauthAccessTableName:
+          Ref: OauthAccessTableName
+        OauthBasicTableName:
+          Ref: OauthBasicTableName
+        OauthRefreshTableName:
+          Ref: OauthRefreshTableName
+        ReadCapacityUnits:
+          Ref: ReadCapacityUnits
+        WriteCapacityUnits:
+          Ref: WriteCapacityUnits
+      TemplateURL: dynamodb-table.yml
+    Type: AWS::DynamoDB::Table
