@@ -13,7 +13,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-func NewTokenStore(config *Config) (tokenStore *TokenStore) {
+func NewTokenStore(config *Config) (store oauth2.TokenStore) {
 	session := config.SESSION
 	svc := dynamodb.New(session)
 	return &TokenStore{
