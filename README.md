@@ -34,7 +34,7 @@ func main() {
 }
 ```
 
-## Usage (with IAM Role configure for ec2 or Lambda)
+## Usage (with IAM Role configured for ec2 or Lambda)
 
 ``` go
 package main
