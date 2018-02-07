@@ -21,11 +21,17 @@ type TableConfig struct {
 
 // NewConfig create dynamodb configuration
 func NewConfig(region string, endpoint string, access_key string, secret string) (config *Config, err error) {
-	newSession, err := session.NewSession(&aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.NewStaticCredentials(access_key, secret, ""),
-		Endpoint:    aws.String(endpoint),
-	})
+	awsConfig := aws.NewConfig()
+	if len(region) > 0 {
+		awsConfig.Region = aws.String(region)
+	}
+	if len(access_key) > 0 && len(secret) > 0 {
+		awsConfig.Credentials = credentials.NewStaticCredentials(access_key, secret, "")
+	}
+	if len(endpoint) > 0 {
+		awsConfig.Endpoint = aws.String(endpoint)
+	}
+	newSession, err := session.NewSession(awsConfig)
 	if err != nil {
 		return
 	}

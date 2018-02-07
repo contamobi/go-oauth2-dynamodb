@@ -10,7 +10,7 @@
 $ go get -u github.com/contamobi/go-oauth2-dynamodb
 ```
 
-## Usage
+## Usage (specifying credentials)
 
 ``` go
 package main
@@ -32,6 +32,50 @@ func main() {
 	)
 	// ...
 }
+```
+
+## Usage (with IAM Role configure for ec2 or Lambda)
+
+``` go
+package main
+
+import (
+	"github.com/contamobi/go-oauth2-dynamodb"
+	"github.com/contamobi/go-oauth2/manage"
+)
+
+func main() {
+	manager := manage.NewDefaultManager()
+	manager.MustTokenStorage(
+		dynamo.NewTokenStore(dynamo.NewConfig(
+			"us-east-1", // AWS Region
+			"", // Emtpy
+			"", // Emtpy
+			"", // Emtpy
+		)),
+	)
+	// ...
+}
+```
+
+## Run tests
+
+### Start dynamodb local
+``` 
+java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb 
+```
+
+### Export env variables
+```
+export AWS_REGION=us-east-1
+export DYNAMODB_ENDPOINT='http://localhost:8000'
+export AWS_ACCESS_KEY=AKIA******
+export AWS_SECRET=**************
+```
+
+### Run tests
+```
+go test
 ```
 
 ## MIT License
