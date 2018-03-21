@@ -18,6 +18,9 @@ func TestTokenStore(t *testing.T) {
 			os.Getenv("DYNAMODB_ENDPOINT"),
 			os.Getenv("AWS_ACCESS_KEY"),
 			os.Getenv("AWS_SECRET"),
+			"oauth2_basic",
+			"oauth2_access",
+			"oauth2_refresh",
 		)
 		store := dynamo.NewTokenStore(mcfg)
 		So(err, ShouldBeNil)
