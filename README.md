@@ -28,6 +28,9 @@ func main() {
 			"http://localhost:8000", // AWS DynamoDB Endpoint
 			"AKIA*********", // AWS Access Key
 			"*************", // AWS Secret
+                        "oauth2_basic", // Oauth2 basic table name
+			"oauth2_access", // Oauth2 access table name
+			"oauth2_refresh", // Oauth2 refresh table name
 		)),
 	)
 	// ...
@@ -52,6 +55,10 @@ func main() {
 			"", // Emtpy
 			"", // Emtpy
 			"", // Emtpy
+			"oauth2_basic", // Oauth2 basic table name
+                        "oauth2_access", // Oauth2 access table name
+                        "oauth2_refresh", // Oauth2 refresh table name
+
 		)),
 	)
 	// ...
