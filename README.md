@@ -52,9 +52,9 @@ func main() {
 	manager.MustTokenStorage(
 		dynamo.NewTokenStore(dynamo.NewConfig(
 			"us-east-1", // AWS Region
-			"", // Emtpy
-			"", // Emtpy
-			"", // Emtpy
+			"", // Empty
+			"", // Empty
+			"", // Empty
 			"oauth2_basic", // Oauth2 basic table name
                         "oauth2_access", // Oauth2 access table name
                         "oauth2_refresh", // Oauth2 refresh table name
